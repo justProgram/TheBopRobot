@@ -6,9 +6,10 @@
 #include <SoftwareSerial.h>
   
 // Code Log: 
-// 1/16/16 -> Blink
+// 1/16/16 -> Blink program
 // 1/19/16 -> BT program, Distance Sensor wiring, Tweaks
 // 1/20/16 -> Distance Sensor programming, Buzzer programming w/ SV
+// 1/21/16 -> More BT, Github??
   
 // Pin Usage:
 int rLED = 2;
@@ -18,6 +19,9 @@ int btTX = A1;
 int buzz = 8;
 int dECHO = 3;
 int dTRIG = 11;
+int pan = 9;
+int tilt = 10;
+int cal = 15;
   
 SoftwareSerial bt(btRX,btTX);
   
@@ -42,10 +46,10 @@ void stopMotors() {
   delay(1000);
 } 
   
-void forward() {
+void forward(int mLSpeed, int mRSpeed) {
   stopMotors();
-  mR->setSpeed(255);
-  mL->setSpeed(255);
+  mR->setSpeed(mRSpeed-cal);
+  mL->setSpeed(mLSpeed);
   mR->run(FORWARD);
   mL->run(FORWARD);
   // turn on motor
@@ -58,6 +62,10 @@ void reverse(){
   mR->run(BACKWARD);
   mL->run(BACKWARD);
 } 
+
+void adjCal(int val){
+  cal = cal+val;
+}
   
 void buzzer(){
   for(int i=0;i<3;i++){
@@ -123,24 +131,35 @@ void loop() {
         LEDlow();
         break;
       case 'f' :
-        forward();
+        forward(255,255);
         break;
       case 'r' :
         reverse();
-//        buzzer();
+        buzzer();
         break;
       case 's' :
         stopMotors();
         break; 
       case 'b' :
-//        buzzer();
+        buzzer();
         break;
       case ']' :
         LEDright();
         break;
       case '[' :
         LEDleft();
-        break; 
+        break;
+      case 'q' :
+        forward(150,255);
+        break;
+      case 'w' :
+        forward(255,150);
+        break;
+      case '+' :
+        adjCal(5);
+        break;
+      case '-' :
+        adjCal(-5);
     }
   }
   delay(100);
