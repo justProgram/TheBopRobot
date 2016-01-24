@@ -2,8 +2,8 @@
 // https://arduino.cc/ <- Arduino website
   
 #include <Adafruit_MotorShield.h>
-  
 #include <SoftwareSerial.h>
+#include <Servo.h>
   
 // Code Log: 
 // 1/16/16 -> Blink program
@@ -28,6 +28,9 @@ SoftwareSerial bt(btRX,btTX);
 Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
 Adafruit_DCMotor *mR = AFMS.getMotor(3);
 Adafruit_DCMotor *mL = AFMS.getMotor(1);
+
+Servo pS;
+Servo tS;
 
 int dist(){
  digitalWrite(dTRIG, HIGH);
@@ -77,6 +80,44 @@ void buzzer(){
   noTone(buzz);
 } 
   
+int pAngle = 80;
+boolean pDir = true;
+  
+void sweep(int deg){
+  int maxAng = pAngle + deg;
+  int minAng = pAngle - deg;
+  int i;
+  int d;
+  for(i = pAngle;i<maxAng && i < 180 ;i++){
+    pS.write(i);
+    delay(15);
+    d =  dist();
+    if(d < 20 ){
+      pAngle = i+10;
+      pS.write(pAngle);
+      return;
+    }
+    Serial.println(d);
+  }
+  for(;i>minAng && i >= 0 ;i--){
+    pS.write(i);
+    delay(15);    
+    d =  dist();
+    if(d < 20 ){
+      pAngle = i-10;
+      pS.write(pAngle);
+      return;
+    }
+    Serial.println(d);
+  }
+  /*
+  for(;i!=pAngle;i++){
+    pS.write(i);
+    delay(15);    
+  }
+  */
+} 
+  
 void setup() {
   // put your setup code here, to run once:
   pinMode(rLED,OUTPUT);
@@ -86,6 +127,10 @@ void setup() {
   AFMS.begin();
   pinMode(dTRIG,OUTPUT);
   pinMode(dECHO,INPUT);
+  pS.attach(pan);
+  tS.attach(tilt);
+  pS.write(pAngle);
+  tS.write(90);
 } 
   
 void LEDhigh(){
@@ -115,6 +160,8 @@ void LEDleft(){
     delay(1000);
  } 
 }  
+
+
    
 void loop() {
   // put your main code here, to run repeatedly:
@@ -160,6 +207,10 @@ void loop() {
         break;
       case '-' :
         adjCal(-5);
+        break;
+      case 'a' :
+        sweep(60);
+        break;
     }
   }
   delay(100);
