@@ -1,5 +1,6 @@
-// Arduino UNO R3
-// https://arduino.cc/ <- Arduino website
+// Arduino UNO R3          
+// https://arduino.cc/                        <- Arduino website
+// https://github.com/justProgram/TheBopRobot <- Bop on Github
   
 #include <Adafruit_MotorShield.h>
 #include <SoftwareSerial.h>
@@ -37,7 +38,8 @@ int dist(){
  delayMicroseconds(1000);
  digitalWrite(dTRIG, LOW);
  int duration = pulseIn(dECHO, HIGH);
- int distance = (duration/2) / 29.1;
+ //int distance = (duration/2) / 29.1;
+ int distance = (duration/57);
  return distance;  
 }
   
@@ -82,41 +84,87 @@ void buzzer(){
   
 int pAngle = 80;
 boolean pDir = true;
-  
+double len,angle;
+
 void sweep(int deg){
-  int maxAng = pAngle + deg;
-  int minAng = pAngle - deg;
+  int maxAng = min(pAngle + deg,180);
+  int minAng = max(pAngle - deg,0);
+  int _delay = 30;
   int i;
   int d;
-  for(i = pAngle;i<maxAng && i < 180 ;i++){
+  int tmp = 0;
+  int ang = 0 ;
+
+  for(i = pAngle;i<maxAng && i < 180 ;i+=2){
     pS.write(i);
-    delay(15);
+    delay(_delay);
     d =  dist();
-    if(d < 20 ){
-      pAngle = i+10;
-      pS.write(pAngle);
-      return;
+    if(d != 0) {
+      if(d < 20 ){
+        pAngle = i+10;
+        pS.write(pAngle);
+        return;
+      }
+      if(tmp == 0 || d < tmp) {
+        tmp = d;
+        ang = i;
+      }
+      Serial.println(d);
     }
-    Serial.println(d);
   }
-  for(;i>minAng && i >= 0 ;i--){
+  for(;i>minAng;i-=10){
     pS.write(i);
-    delay(15);    
+    delay(_delay);
+  }
+  for(i=minAng;i<pAngle ;i+=2){
+    pS.write(i);
+    delay(_delay);    
     d =  dist();
-    if(d < 20 ){
-      pAngle = i-10;
-      pS.write(pAngle);
-      return;
+    if(d != 0) {
+      if(d < 20 ){
+        pAngle = i-10;
+        pS.write(pAngle);
+        return;
+      }
+      if (tmp == 0 || d < tmp){
+        tmp = d;
+        ang = i;
+      }
+      Serial.println(d);
     }
-    Serial.println(d);
   }
-  /*
-  for(;i!=pAngle;i++){
-    pS.write(i);
-    delay(15);    
-  }
-  */
-} 
+  Serial.print("Lowest distance ");
+  Serial.println(tmp);
+  Serial.print("At angle: ");
+  Serial.println(ang);
+  bt.print("Lowest distance ");
+  bt.println(tmp);
+  bt.print("At angle: ");
+  bt.println(ang);
+  len = tmp;
+  angle = ang;
+  pS.write(ang);
+}
+
+double k = 0.1;
+
+void follow(){
+  int bs = 150;
+  int ls = bs+len/tan(angle)*k;
+  int rs = bs-len/tan(angle)*k;
+  mL->setSpeed(ls);
+  mR->setSpeed(rs); 
+  mR->run(FORWARD);
+  mL->run(FORWARD);
+  delay(len*100);
+  mR->run(RELEASE);
+  mL->run(RELEASE); 
+}
+
+void autonomous(){
+  pAngle = 80;
+  sweep(90);  
+}
   
 void setup() {
   // put your setup code here, to run once:
@@ -131,6 +179,7 @@ void setup() {
   tS.attach(tilt);
   pS.write(pAngle);
   tS.write(90);
+  dist();
 } 
   
 void LEDhigh(){
@@ -209,13 +258,16 @@ void loop() {
         adjCal(-5);
         break;
       case 'a' :
-        sweep(60);
+        autonomous();
+        break;
+      case 't' :
+        follow();
         break;
     }
   }
   delay(100);
-  Serial.println(dist());
-  Serial.print(" cm");
+  //Serial.println(dist());
+  //Serial.print(" cm");
 }  
    
    
